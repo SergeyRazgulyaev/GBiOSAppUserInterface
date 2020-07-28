@@ -18,7 +18,9 @@ class ZoomPhotoViewController: UIViewController {
     var friendZoomPhotoNumber: Int?
     var zoomPhotoIndex: Int?
     
-    var shownImage: UIImage? = UIImage(systemName: "tortoise")
+    var previousImage: UIImage? = UIImage(systemName: "tortoise")
+    var shownImage: UIImage? = UIImage(systemName: "hare")
+    var nextImage: UIImage? = UIImage(systemName: "hare")
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,20 +44,36 @@ class ZoomPhotoViewController: UIViewController {
         if let swipeGesture = sender {
             switch swipeGesture.direction {
             case .right:
-                if shownImage == UIImage(systemName: "tortoise") || shownImage == zoomedFriendsPhoto.image {
-                    print("No right swipe")
-                } else {
-                shownImage = zoomedFriendsPhoto.image
-                print("Swipe right")
-                photosReverseAnimation()
+                if zoomPhotoIndex! == 0 {
+                    print("No elements to swipe")
+                }
+                if zoomPhotoIndex! > 0 && zoomPhotoIndex! < (forZoomPhotos.count - 1)  {
+                    previousImage = forZoomPhotos[zoomPhotoIndex!-1].photoCard
+                    shownImage = forZoomPhotos[zoomPhotoIndex!].photoCard
+                    print("Swipe right")
+                    photosReverseAnimation()
+                }
+                if zoomPhotoIndex! == (forZoomPhotos.count - 1) {
+                    previousImage = forZoomPhotos[zoomPhotoIndex!-1].photoCard
+                    shownImage = forZoomPhotos[zoomPhotoIndex!].photoCard
+                    print("Swipe right")
+                    photosReverseAnimation()
                 }
             case .left:
-                if shownImage == zoomedNextFriendPhoto.image {
-                    print("No left swipe")
-                } else {
-                shownImage = zoomedNextFriendPhoto.image
-                print("Swipe left")
-                photosAnimation()
+                if zoomPhotoIndex! == 0 {
+                    nextImage = forZoomPhotos[zoomPhotoIndex!+1].photoCard
+                    shownImage = zoomedFriendsPhoto.image
+                    print("Swipe left")
+                    photosAnimation()
+                }
+                if zoomPhotoIndex! > 0 && zoomPhotoIndex! < (forZoomPhotos.count - 1)  {
+                    nextImage = forZoomPhotos[zoomPhotoIndex!+1].photoCard
+                    shownImage = forZoomPhotos[zoomPhotoIndex!].photoCard
+                    print("Swipe left")
+                    photosAnimation()
+                }
+                if zoomPhotoIndex! == forZoomPhotos.count - 1 {
+                    print("No elements to swipe")
                 }
             default:
                 break
@@ -64,6 +82,13 @@ class ZoomPhotoViewController: UIViewController {
     }
     
     func photosAnimation() {
+        CATransaction.begin()
+        CATransaction.setCompletionBlock({
+            self.zoomPhotoIndex! += 1
+        })
+        
+        zoomedNextFriendPhoto.image = nextImage
+        zoomedFriendsPhoto.image = shownImage
         
         let animationTransformScale = CASpringAnimation(keyPath: "transform.scale")
         animationTransformScale.duration = 1
@@ -77,15 +102,20 @@ class ZoomPhotoViewController: UIViewController {
         
         let animationTransform = CABasicAnimation(keyPath: "position.x")
         animationTransform.duration = 1
-        animationTransform.fromValue = 621
-        animationTransform.toValue = zoomedNextFriendPhoto.frame
+        animationTransform.fromValue = zoomedNextFriendPhoto.frame.width * 2
+        animationTransform.toValue = zoomedNextFriendPhoto.frame.width / 2
         animationTransform.fillMode = CAMediaTimingFillMode.both
         animationTransform.isRemovedOnCompletion = false
         zoomedNextFriendPhoto.layer.add(animationTransform, forKey: nil)
         
+        CATransaction.commit()
     }
     
     func photosReverseAnimation() {
+        
+        zoomedNextFriendPhoto.image = shownImage
+        zoomedFriendsPhoto.image = previousImage
+        zoomPhotoIndex! -= 1
         
         let animationTransformScale = CASpringAnimation(keyPath: "transform.scale")
         animationTransformScale.duration = 1
@@ -99,11 +129,12 @@ class ZoomPhotoViewController: UIViewController {
         
         let animationTransform = CABasicAnimation(keyPath: "position.x")
         animationTransform.duration = 1
-        animationTransform.fromValue = 207
-        animationTransform.toValue = 621
+        animationTransform.fromValue = zoomedNextFriendPhoto.frame.width / 2
+        animationTransform.toValue = zoomedNextFriendPhoto.frame.width * 2
         animationTransform.fillMode = CAMediaTimingFillMode.both
         animationTransform.isRemovedOnCompletion = false
         zoomedNextFriendPhoto.layer.add(animationTransform, forKey: nil)
+
     }
     
     func zoomPhotoFilter() {
